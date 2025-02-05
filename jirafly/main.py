@@ -26,7 +26,7 @@ UNASSIGNED = "Unassigned"
 class Task:
     def __init__(self, issue):
         self.assignee: str = (
-            issue.fields.assignee.displayName.split()[0]
+            issue.fields.assignee.displayName
             if issue.fields.assignee
             else UNASSIGNED
         )
@@ -168,7 +168,7 @@ def _print_tasks_by_assignee(tasks_by_assignee, verbose):
         )
 
     table = PrettyTable()
-    table.field_names = ["Asg.", "Total", "Cap.", "HLE", "Task", "WSJF", "Status"]
+    table.field_names = ["Assignee", "Tot.", "Cap.", "HLE", "Task", "WSJF", "Status"]
 
     for user, data in sorted_tasks_by_assignee.items():
         capacity = data.wd * data.vel
@@ -210,9 +210,9 @@ def planning(
     tasks = client.fetch_tasks(filter_id)
 
     members = {
-        "Marek": MemberPlan(*marek),
-        "Pavel": MemberPlan(*pavel),
-        "Ondřej": MemberPlan(*ondra),
+        "Marek Dostál": MemberPlan(*marek),
+        "Pavel Dedík": MemberPlan(*pavel),
+        "Ondřej Kulatý": MemberPlan(*ondra),
     }
     tasks_by_assignee = {**members, UNASSIGNED: MemberPlan(0, 0)}
 

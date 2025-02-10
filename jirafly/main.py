@@ -54,9 +54,8 @@ class Task:
         else:
             self.ratio_type = "Product"
 
-        self.fix_version = sorted(
-            issue.fields.fixVersions, key=lambda x: x.name, reverse=True
-        )[0].name[:4]
+        fix_versions = sorted(issue.fields.fixVersions, key=lambda x: x.name, reverse=True)
+        self.fix_version: str | None = fix_versions[0].name[:4] if fix_versions else None
 
     @property
     def colored_title(self):

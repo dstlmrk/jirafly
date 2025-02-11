@@ -4,6 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Annotated
 
+
 import typer
 from dotenv import load_dotenv
 from jira import JIRA
@@ -21,6 +22,24 @@ PLANNING_FILTER_ID = os.getenv("PLANNING_FILTER_ID")
 CUSTOM_FIELD_HLE = "customfield_11605"
 CUSTOM_FIELD_WSJF = "customfield_11737"
 UNASSIGNED = "Unassigned"
+
+
+def format_seconds(seconds):
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+
+    parts = []
+    if days > 0:
+        parts.append(f"{days}d")
+    if hours > 0:
+        parts.append(f"{hours}h")
+    if minutes > 0:
+        parts.append(f"{minutes}m")
+    if seconds > 0 or not parts:
+        parts.append(f"{seconds}s")
+
+    return " ".join(parts)
 
 
 class Task:
@@ -56,6 +75,8 @@ class Task:
 
         fix_versions = sorted(issue.fields.fixVersions, key=lambda x: x.name, reverse=True)
         self.fix_version: str | None = fix_versions[0].name[:4] if fix_versions else None
+
+        self.time_spent: int = issue.raw["fields"]["timetracking"].get("timeSpentSeconds", 0)
 
     @property
     def colored_title(self):
@@ -134,11 +155,11 @@ def _print_general_info(tasks_by_assignee):
     table.add_row(
         [
             "MAINTENANCE",
-            f"{hle['Maintenance']:.2f} MD {hle['Maintenance'] / total * 100:.2f} %",
+            f"{hle['Maintenance']:.2f} MD {hle['Maintenance'] / total * 100:5.2f} %",
         ]
     )
     table.add_row(
-        ["PRODUCT", f"{hle['Product']:.2f} MD {hle['Product'] / total * 100:.2f} %"],
+        ["PRODUCT", f"{hle['Product']:.2f} MD {hle['Product'] / total * 100:5.2f} %"],
         divider=True,
     )
     table.add_row(["TOTAL", f"{sum(hle.values()):.2f} MD"])
@@ -197,6 +218,15 @@ def _print_tasks_by_assignee(tasks_by_assignee, verbose):
     print(table)
 
 
+def _highlight_exceeding(task: Task) -> str:
+    if task.time_spent > (task.hle * 8 * 3600) * 3:
+        return "red"
+    elif task.time_spent > (task.hle * 8 * 3600) * 2:
+        return "yellow"
+    else:
+        return None
+
+
 @app.command()
 def planning(
     marek: Annotated[tuple[float, float], typer.Option("--marek")],
@@ -232,6 +262,7 @@ def ratio(
         lambda: deepcopy(
             {
                 "ratio": {"Maintenance": 0, "Product": 0, "Excluded": 0},
+                "time": {"Maintenance": 0, "Product": 0, "Excluded": 0},
                 "tasks": [],
             }
         )
@@ -241,20 +272,24 @@ def ratio(
     for task in client.fetch_tasks(filter_id):
         tasks[task.fix_version]["tasks"].append(task)
         tasks[task.fix_version]["ratio"][task.ratio_type] += task.hle
+        tasks[task.fix_version]["time"][task.ratio_type] += task.time_spent
 
     sorted_tasks = dict(sorted(tasks.items()))
 
     table = PrettyTable(align="l")
-    table.field_names = ["Fix version", "Task", "HLE"]
+    table.field_names = ["Fix version", "Task", "HLE", "Time spent"]
 
-    total_maintenance = 0
-    total_product = 0
-    total_excluded = 0
+    total_maintenance = total_product = total_excluded = 0
+    time_total_maintenance = time_total_product = 0
 
     for idx, (fix_version, data) in enumerate(sorted_tasks.items()):
         total_maintenance += (maintenance := data["ratio"]["Maintenance"])
         total_product += (product := data["ratio"]["Product"])
         total_excluded += (excluded := data["ratio"]["Excluded"])
+
+        time_total_maintenance += (time_maintenance := data["time"]["Maintenance"])
+        time_total_product += (time_product := data["time"]["Product"])
+        time_total_spent = 0
 
         tasks_count = len(data["tasks"])
         for j, task in enumerate(data["tasks"], start=1):
@@ -265,29 +300,46 @@ def ratio(
                     if verbose
                     else task.colored_title,
                     f"{task.hle:.2f}",
+                    colored(format_seconds(task.time_spent), _highlight_exceeding(task)),
                 ],
                 divider=True if j == tasks_count else False,
             )
+            time_total_spent += task.time_spent
 
         total = maintenance + product
+        time_total = time_maintenance + time_product
         maintenance_str = (
-            f"MAINTENANCE: {maintenance:5.2f} / {maintenance / total * 100:4.1f} %"
+            f"MAINTENANCE: {maintenance:5.2f}"
+            f" / {maintenance / total * 100:4.1f} %"
+            f" / ⏱ {time_maintenance / time_total * 100:4.1f} %"
         )
-        product_str = f"PRODUCT: {product:5.2f} / {product / total * 100:4.1f} %"
+        product_str = (
+            f"PRODUCT: {product:5.2f}"
+            f" / {product / total * 100:4.1f} %"
+            f" / ⏱ {time_product / time_total * 100:4.1f} %"
+        )
 
         table.add_row(
             [
                 "",
                 colored(f"{maintenance_str}  |  {product_str}", attrs=["bold"]),
                 colored(f"{total + excluded:.2f}", attrs=["bold"]),
+                format_seconds(time_total_spent),
             ],
             divider=True,
         )
 
     _total = total_maintenance + total_product
-    maintenance_str = f"MAINTENANCE: {total_maintenance:5.2f} / {total_maintenance / _total * 100:4.1f} %"
+    _time_total = time_total_maintenance + time_total_product
+    maintenance_str = (
+        f"MAINTENANCE: {total_maintenance:5.2f}"
+        f" / {total_maintenance / _total * 100:4.1f} %"
+        f" / ⏱ {time_total_maintenance / _time_total * 100:4.1f} %"
+    )
     product_str = (
-        f"PRODUCT: {total_product:5.2f} / {total_product / _total * 100:4.1f} %"
+        f"PRODUCT: {total_product:5.2f}"
+        f" / {total_product / _total * 100:4.1f} %"
+        f" / ⏱ {time_total_product / _time_total * 100:4.1f} %"
     )
 
     table.add_row(
@@ -295,6 +347,7 @@ def ratio(
             colored("Total", attrs=["bold"]),
             colored(f"{maintenance_str}  |  {product_str}", attrs=["bold"]),
             f"{_total + total_excluded:.2f}",
+            "",
         ]
     )
 

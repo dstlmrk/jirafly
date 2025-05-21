@@ -1,0 +1,22 @@
+# Team Configuration Template
+# Copy this file to team.yaml and customize it for your team
+
+members:
+  - name: "John Doe"
+    wd: 5.0    # Work days per sprint (0-10)
+    vel: 0.4   # Velocity/productivity factor (multiplier)
+
+  - name: "Jane Smith"
+    wd: 4.0    # Part-time team member
+    vel: 0.8   # Higher productivity
+
+  - name: "Bob Johnson"
+    wd: 5.0
+    vel: 0.25   # Junior developer, lower velocity
+
+# Configuration Guidelines:
+# - name: Full name of the team member (must be unique)
+# - wd: Working days in the sprint (0-10, can include decimals for part-time)
+# - vel: Velocity factor
+#
+# The planning tool will calculate capacity as: wd * vel for each member

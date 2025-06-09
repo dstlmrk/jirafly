@@ -1,22 +1,29 @@
-[tool.poetry]
+[project]
 name = "jirafly"
 version = "0.1.0"
 description = ""
-authors = ["Marek Dostál <dstlmrk@gmail.com>"]
+authors = [
+    {name = "Marek Dostál", email = "dstlmrk@gmail.com"}
+]
 readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "jira>=3.8.0",
+    "prettytable>=3.12.0",
+    "typer>=0.13.0",
+    "termcolor>=2.5.0",
+    "python-dotenv>=1.0.1",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-jira = "^3.8.0"
-prettytable = "^3.12.0"
-typer = "^0.13.0"
-termcolor = "^2.5.0"
-python-dotenv = "^1.0.1"
-
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.9.4"
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.9.4",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"

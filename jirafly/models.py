@@ -17,17 +17,37 @@ class Task:
         issue,
         custom_field_hle: str,
         custom_field_wsjf: str,
+        custom_field_tech_lead_first: str,
+        custom_field_tech_lead_second: str,
         unassigned: str = "Unassigned",
     ):
         self.assignee: str = (
             issue.fields.assignee.displayName if issue.fields.assignee else unassigned
         )
+        self.is_assigned: bool = bool(issue.fields.assignee)
         self._key: str = issue.key
         self._title: str = issue.fields.summary
         self.type: str = issue.fields.issuetype.name
         self._status: str = issue.fields.status
         self.hle: float = getattr(issue.fields, custom_field_hle, 0) or 0
         self.wsjf: float = int(getattr(issue.fields, custom_field_wsjf, 0) or 0)
+
+        def _get_initials(field_name: str) -> str:
+            tl = getattr(issue.fields, field_name, None)
+            if not tl or not tl.displayName.strip():
+                return ""
+            return "".join(word[0].upper() for word in tl.displayName.split())
+
+        first, second = (
+            _get_initials(custom_field_tech_lead_first),
+            _get_initials(custom_field_tech_lead_second),
+        )
+
+        if first or second:
+            blank = "  "
+            self.tl = f"{first or blank}/{second or blank}"
+        else:
+            self.tl = ""
 
         if any(
             (

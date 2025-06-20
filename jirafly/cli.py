@@ -6,7 +6,7 @@ import typer
 from prettytable import PrettyTable
 from termcolor import colored
 
-from .jira_service import UNASSIGNED, JiraClient
+from .jira_service import JiraClient
 from .models import MemberPlan
 from .team_config import load_team_config
 from .utils import (
@@ -39,7 +39,7 @@ def parse_member_option(values: list[str]) -> dict[str, tuple[float, float]]:
 @app.command()
 def planning(
     team: Path = typer.Argument(
-        Path("team.yaml"), help="Path to team config YAML file", exists=True
+        Path("configs/team.yaml"), help="Path to team config YAML file", exists=True
     ),
     jira_url: str = typer.Option(
         ...,
@@ -102,8 +102,10 @@ def planning(
     client = JiraClient(jira_url, jira_email, jira_token)
     tasks = client.fetch_tasks(filter_id)
 
-    members = {name: MemberPlan(*config) for name, config in team_members.items()}
-    tasks_by_assignee = {**members, UNASSIGNED: MemberPlan(0, 0)}
+    tasks_by_assignee = defaultdict(
+        lambda: MemberPlan(0, 0),
+        {name: MemberPlan(*config) for name, config in team_members.items()},
+    )
 
     for task in tasks:
         tasks_by_assignee[task.assignee].total_hle += task.hle

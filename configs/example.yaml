@@ -3,14 +3,17 @@
 
 members:
   - name: "John Doe"
+    nickname: john
     wd: 5.0    # Work days per sprint (0-10)
     vel: 0.4   # Velocity/productivity factor (multiplier)
 
   - name: "Jane Smith"
+    nickname: jane
     wd: 4.0    # Part-time team member
     vel: 0.8   # Higher productivity
 
   - name: "Bob Johnson"
+    nickname: bob
     wd: 5.0
     vel: 0.25   # Junior developer, lower velocity
 

@@ -37,33 +37,44 @@ def print_general_info(tasks_by_assignee: dict[str, MemberPlan]):
     )
 
     # Ratio
-    hle: dict[str, float] = {"Maintenance": 0.0, "Product": 0.0, "Excluded": 0.0}
+    hle_all: dict[str, float] = {"Maintenance": 0.0, "Product": 0.0, "Excluded": 0.0}
+    hle_assigned: dict[str, float] = {
+        "Maintenance": 0.0,
+        "Product": 0.0,
+        "Excluded": 0.0,
+    }
     for plan in tasks_by_assignee.values():
         for task in plan.tasks:
-            hle[task.ratio_type] += task.hle
-    total = hle["Maintenance"] + hle["Product"]
-
-    # Sprint goal
-    sprint_goal = 0.0
-    for member, data in tasks_by_assignee.items():
-        if member != UNASSIGNED:
-            sprint_goal += sum(task.wsjf for task in data.tasks)
+            hle_all[task.ratio_type] += task.hle
+            if task.is_assigned:
+                hle_assigned[task.ratio_type] += task.hle
+    total = hle_all["Maintenance"] + hle_all["Product"]
+    total_assigned = hle_assigned["Maintenance"] + hle_assigned["Product"]
 
     table = PrettyTable(header=False, align="l")
-
+    table.add_row(["", "ASSIGNED", "ALL"], divider=True)
     table.add_row(
         [
             "MAINTENANCE",
-            f"{hle['Maintenance']:.2f} MD {hle['Maintenance'] / total * 100:5.2f} %",
+            f"{hle_assigned['Maintenance']:.2f} MD {hle_assigned['Maintenance'] / total_assigned * 100:5.2f} %",
+            f"{hle_all['Maintenance']:.2f} MD {hle_all['Maintenance'] / total * 100:5.2f} %",
         ]
     )
     table.add_row(
-        ["PRODUCT", f"{hle['Product']:.2f} MD {hle['Product'] / total * 100:5.2f} %"],
+        [
+            "PRODUCT",
+            f"{hle_assigned['Product']:.2f} MD {hle_assigned['Product'] / total_assigned * 100:5.2f} %",
+            f"{hle_all['Product']:.2f} MD {hle_all['Product'] / total * 100:5.2f} %",
+        ],
         divider=True,
     )
-    table.add_row(["TOTAL", f"{sum(hle.values()):.2f} MD"])
-    table.add_row(["TEAM CAPACITY", f"{team_capacity:.2f} MD"], divider=True)
-    table.add_row(["SPRINT GOAL", f"{sprint_goal} WSJF"])
+    table.add_row(
+        [
+            "TOTAL",
+            f"{sum(hle_assigned.values()):.2f} / {team_capacity:.2f} MD",
+            f"{sum(hle_all.values()):.2f} / {team_capacity:.2f} MD",
+        ]
+    )
     print()
     print(table)
 
@@ -85,11 +96,21 @@ def print_tasks_by_assignee(tasks_by_assignee: dict[str, MemberPlan], verbose: b
                 else task_.colored_title
             ),
             f"{task_.wsjf or ''}",
+            f"{task_.tl}",
             task_.status,
         )
 
     table = PrettyTable()
-    table.field_names = ["Assignee", "Tot.", "Cap.", "HLE", "Task", "WSJF", "Status"]
+    table.field_names = [
+        "Assignee",
+        "Tot.",
+        "Cap.",
+        "HLE",
+        "Task",
+        "WSJF",
+        "TL",
+        "Status",
+    ]
 
     for user, data in sorted_tasks_by_assignee.items():
         capacity = data.wd * data.vel

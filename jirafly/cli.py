@@ -163,7 +163,14 @@ def ratio(
     sorted_tasks = dict(sorted(tasks.items()))
 
     table = PrettyTable(align="l")
-    table.field_names = ["Fix version", "Task", "HLE", "Time spent"]
+    table.field_names = [
+        "Fix version",
+        "Assignee",
+        "Task",
+        "HLE",
+        "Time spent",
+        "Status",
+    ]
 
     total_maintenance = total_product = total_excluded = 0
     time_total_maintenance = time_total_product = 0
@@ -184,11 +191,21 @@ def ratio(
         time_total_product += time_product
         time_total_spent = 0
 
-        tasks_count = len(data["tasks"])
-        for j, task in enumerate(data["tasks"], start=1):
+        sorted_tasks = sorted(data["tasks"], key=lambda x: x.assignee)
+        for j, task in enumerate(sorted_tasks, start=1):
+            previous_assignee = sorted_tasks[j - 2].assignee if j > 1 else None
+
             table.add_row(
                 [
-                    colored(fix_version, attrs=["bold"]) if j == 1 else "",
+                    colored(
+                        f" {fix_version} ",
+                        color="black",
+                        on_color="on_white",
+                        attrs=["bold"],
+                    )
+                    if j == 1
+                    else "",
+                    task.assignee if task.assignee != previous_assignee else "",
                     (
                         f"{task.colored_title}\n{task.colored_url}"
                         if verbose
@@ -196,10 +213,12 @@ def ratio(
                     ),
                     f"{task.hle:.2f}",
                     colored(format_seconds(task.time_spent), highlight_exceeding(task)),
+                    task.status,
                 ],
-                divider=True if j == tasks_count else False,
             )
             time_total_spent += task.time_spent
+
+        table.add_divider()
 
         total = maintenance + product
         time_total = time_maintenance + time_product
@@ -217,9 +236,11 @@ def ratio(
         table.add_row(
             [
                 "",
+                "",
                 colored(f"{maintenance_str}  |  {product_str}", attrs=["bold"]),
                 colored(f"{total + excluded:.2f}", attrs=["bold"]),
                 format_seconds(time_total_spent),
+                "",
             ],
             divider=True,
         )
@@ -239,9 +260,11 @@ def ratio(
 
     table.add_row(
         [
+            "",
             colored("Total", attrs=["bold"]),
             colored(f"{maintenance_str}  |  {product_str}", attrs=["bold"]),
             f"{_total + total_excluded:.2f}",
+            "",
             "",
         ]
     )

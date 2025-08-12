@@ -102,7 +102,9 @@ class Task:
 
     @property
     def status(self):
-        status = "TA review" if self._status.id == "10902" else self._status
-        if self._status.id != "1":
-            status = colored(status, "yellow")
-        return status
+        if self._status.name in ("In Progress", "In Review", "Waiting"):
+            return colored(self._status.name, color="yellow")
+        elif self._status.name in ("In Testing", "Merged", "Done"):
+            return colored(self._status.name, color="green")
+        else:
+            return self._status.name

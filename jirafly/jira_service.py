@@ -19,7 +19,7 @@ class JiraClient:
         print("Establishing Jira connection...")
         self.jira = JIRA(jira_url, basic_auth=(email, token))
 
-    def fetch_tasks(self, filter_id: str, limit: int = 1000) -> list[Task]:
+    def fetch_tasks(self, filter_id: str, limit: int | None = None) -> list[Task]:
         print(f"Fetching (max {limit}) tasks...")
         issues = self.jira.search_issues(f"filter={filter_id}", maxResults=limit)
         tasks = []

@@ -5,13 +5,13 @@ from .models import MemberPlan, Task
 
 
 def format_seconds(seconds):
-    days, seconds = divmod(seconds, 86400)
+    work_days, seconds = divmod(seconds, 28800)  # 8 * 3600
     hours, seconds = divmod(seconds, 3600)
     minutes, seconds = divmod(seconds, 60)
 
     parts = []
-    if days > 0:
-        parts.append(f"{days}d")
+    if work_days > 0:
+        parts.append(f"{work_days}d")
     if hours > 0:
         parts.append(f"{hours}h")
     if minutes > 0:
@@ -52,21 +52,31 @@ def print_general_info(tasks_by_assignee: dict[str, MemberPlan]):
     total_assigned = hle_assigned["Maintenance"] + hle_assigned["Product"]
 
     table = PrettyTable(header=False, align="l")
-    table.add_row(["", "ASSIGNED", "ALL"], divider=True)
+
+    table.add_row(["", "MAX                 ", "WITHOUT RATIO EXCL."])
+    table.add_row(
+        [
+            "CAPACITY",
+            f"{team_capacity:.2f} MD",
+            f"{team_capacity - hle_all['Excluded']:.2f} MD",
+        ],
+        divider=True,
+    )
+
+    table.add_row(["", "ASSIGNED", "ALL"])
     table.add_row(
         [
             "MAINTENANCE",
-            f"{hle_assigned['Maintenance']:.2f} MD {hle_assigned['Maintenance'] / total_assigned * 100:5.2f} %",
-            f"{hle_all['Maintenance']:.2f} MD {hle_all['Maintenance'] / total * 100:5.2f} %",
+            f"{hle_assigned['Maintenance']:.2f} MD ({hle_assigned['Maintenance'] / total_assigned * 100:5.2f} %)",
+            f"{hle_all['Maintenance']:.2f} MD ({hle_all['Maintenance'] / total * 100:5.2f} %)",
         ]
     )
     table.add_row(
         [
             "PRODUCT",
-            f"{hle_assigned['Product']:.2f} MD {hle_assigned['Product'] / total_assigned * 100:5.2f} %",
-            f"{hle_all['Product']:.2f} MD {hle_all['Product'] / total * 100:5.2f} %",
+            f"{hle_assigned['Product']:.2f} MD ({hle_assigned['Product'] / total_assigned * 100:5.2f} %)",
+            f"{hle_all['Product']:.2f} MD ({hle_all['Product'] / total * 100:5.2f} %)",
         ],
-        divider=True,
     )
     table.add_row(
         [
@@ -98,6 +108,7 @@ def print_tasks_by_assignee(tasks_by_assignee: dict[str, MemberPlan], verbose: b
             f"{task_.wsjf or ''}",
             f"{task_.tl}",
             task_.status,
+            task_.fix_version or "",
         )
 
     table = PrettyTable()
@@ -110,6 +121,7 @@ def print_tasks_by_assignee(tasks_by_assignee: dict[str, MemberPlan], verbose: b
         "WSJF",
         "TL",
         "Status",
+        "FV",
     ]
 
     for user, data in sorted_tasks_by_assignee.items():

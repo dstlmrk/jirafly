@@ -23,36 +23,47 @@ class JiraClient:
         self.token = token
         self.jira = JIRA(jira_url, basic_auth=(email, token))
 
-    def fetch_tasks(self, filter_id: str, limit: int | None = None) -> list[Task]:
-        print(f"Fetching (max {limit}) tasks...")
+    def fetch_tasks(self, filter_id: str) -> list[Task]:
+        print("Fetching tasks...")
 
         # Get the filter and its JQL query using the newer API
         filter_obj = self.jira.filter(filter_id)
         jql_query = filter_obj.jql
 
-        # Use direct REST API call to the new search/jql endpoint
+        # Use direct REST API call to the new search/jql endpoint with pagination
         url = f"{self.jira_url}/rest/api/3/search/jql"
-        headers = {
-            "Accept": "application/json",
-        }
+        headers = {"Accept": "application/json"}
 
-        params = {
-            "jql": jql_query,
-            "maxResults": limit or 100,
-            "fields": "*all",
-        }
+        all_issues = []
+        next_page_token = None
 
-        response = requests.get(
-            url, headers=headers, params=params, auth=(self.email, self.token)
-        )
+        while True:
+            params = {
+                "jql": jql_query,
+                "maxResults": 100,  # Maximum per request
+                "fields": "*all",
+                "nextPageToken": next_page_token,
+            }
 
-        if response.status_code != 200:
-            raise Exception(
-                f"Failed to fetch issues: {response.status_code} - {response.text}"
+            response = requests.get(
+                url, headers=headers, params=params, auth=(self.email, self.token)
             )
 
-        data = response.json()
-        issues = data.get("issues", [])
+            if response.status_code != 200:
+                raise Exception(
+                    f"Failed to fetch issues: {response.status_code} - {response.text}"
+                )
+
+            data = response.json()
+            issues = data.get("issues", [])
+            all_issues.extend(issues)
+            next_page_token = data.get("nextPageToken")
+
+            if not next_page_token:
+                break
+
+        issues = all_issues
+        print(f"Total issues downloaded: {len(issues)}")
 
         tasks = []
         for issue_data in issues:

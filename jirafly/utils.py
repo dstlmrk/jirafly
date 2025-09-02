@@ -1,4 +1,7 @@
+from copy import deepcopy
+
 from prettytable import PrettyTable
+from termcolor import colored
 
 from .jira_service import UNASSIGNED
 from .models import MemberPlan, Task
@@ -37,54 +40,78 @@ def print_general_info(tasks_by_assignee: dict[str, MemberPlan]):
     )
 
     # Ratio
-    hle_all: dict[str, float] = {"Maintenance": 0.0, "Product": 0.0, "Excluded": 0.0}
-    hle_assigned: dict[str, float] = {
+    hle_all: dict[str, dict[str, float]] = {
         "Maintenance": 0.0,
+        "Bug": 0.0,
         "Product": 0.0,
         "Excluded": 0.0,
     }
+    hle_assigned = deepcopy(hle_all)
+
     for plan in tasks_by_assignee.values():
         for task in plan.tasks:
             hle_all[task.ratio_type] += task.hle
             if task.is_assigned:
                 hle_assigned[task.ratio_type] += task.hle
-    total = hle_all["Maintenance"] + hle_all["Product"]
-    total_assigned = hle_assigned["Maintenance"] + hle_assigned["Product"]
+
+    total = hle_all["Maintenance"] + hle_all["Bug"] + hle_all["Product"]
+    total_assigned = (
+        hle_assigned["Maintenance"] + hle_assigned["Bug"] + hle_assigned["Product"]
+    )
+
+    print(
+        f"\nTotal capacity: {colored(f' {team_capacity:.2f} MD ', 'black', on_color='on_yellow')}"
+        f" (without ratio excluded: {colored(f' {team_capacity - hle_all["Excluded"]:.2f} MD ', 'black', on_color='on_yellow')})",
+        end="",
+    )
 
     table = PrettyTable(header=False, align="l")
 
-    table.add_row(["", "MAX                 ", "WITHOUT RATIO EXCL."])
+    table.add_row(["", "Assigned", "All"], divider=True)
     table.add_row(
         [
-            "CAPACITY",
-            f"{team_capacity:.2f} MD",
-            f"{team_capacity - hle_all['Excluded']:.2f} MD",
+            colored(" Maintenance ", color="black", on_color="on_green"),
+            colored(
+                f"{hle_assigned['Maintenance']:.2f} MD ({hle_assigned['Maintenance'] / total_assigned * 100:5.2f} %)",
+                color="green",
+            ),
+            colored(
+                f"{hle_all['Maintenance']:.2f} MD ({hle_all['Maintenance'] / total * 100:5.2f} %)",
+                color="green",
+            ),
         ],
-        divider=True,
-    )
-
-    table.add_row(["", "ASSIGNED", "ALL"])
-    table.add_row(
-        [
-            "MAINTENANCE",
-            f"{hle_assigned['Maintenance']:.2f} MD ({hle_assigned['Maintenance'] / total_assigned * 100:5.2f} %)",
-            f"{hle_all['Maintenance']:.2f} MD ({hle_all['Maintenance'] / total * 100:5.2f} %)",
-        ]
     )
     table.add_row(
         [
-            "PRODUCT",
+            " Bugs",
+            f"{hle_assigned['Bug']:.2f} MD ({hle_assigned['Bug'] / total_assigned * 100:5.2f} %)",
+            f"{hle_all['Bug']:.2f} MD ({hle_all['Bug'] / total * 100:5.2f} %)",
+        ],
+    )
+    table.add_row(
+        [
+            " Product",
             f"{hle_assigned['Product']:.2f} MD ({hle_assigned['Product'] / total_assigned * 100:5.2f} %)",
             f"{hle_all['Product']:.2f} MD ({hle_all['Product'] / total * 100:5.2f} %)",
         ],
     )
     table.add_row(
         [
-            "TOTAL",
+            colored(" Excluded ", color="black", on_color="on_magenta"),
+            colored(f"{hle_assigned['Excluded']:.2f} MD", color="magenta"),
+            colored(f"{hle_all['Excluded']:.2f} MD", color="magenta"),
+        ],
+        divider=True,
+    )
+
+    table.add_row(
+        [
+            " Total",
             f"{sum(hle_assigned.values()):.2f} / {team_capacity:.2f} MD",
             f"{sum(hle_all.values()):.2f} / {team_capacity:.2f} MD",
         ]
     )
+
     print()
     print(table)
 

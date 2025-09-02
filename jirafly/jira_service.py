@@ -24,7 +24,7 @@ class JiraClient:
         self.jira = JIRA(jira_url, basic_auth=(email, token))
 
     def fetch_tasks(self, filter_id: str) -> list[Task]:
-        print("Fetching tasks...")
+        print("Fetching tasks...", end=" ")
 
         # Get the filter and its JQL query using the newer API
         filter_obj = self.jira.filter(filter_id)
@@ -63,7 +63,7 @@ class JiraClient:
                 break
 
         issues = all_issues
-        print(f"Total issues downloaded: {len(issues)}")
+        print(f"total issues downloaded: {len(issues)}")
 
         tasks = []
         for issue_data in issues:

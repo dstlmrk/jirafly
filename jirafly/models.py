@@ -63,6 +63,8 @@ class Task:
             )
         ):
             self.ratio_type = "Maintenance"
+        elif self.type == "Bug":
+            self.ratio_type = "Bug"
         else:
             self.ratio_type = "Product"
 
@@ -80,7 +82,7 @@ class Task:
     @property
     def colored_title(self):
         color, title = None, f"{self._key}: {self._title[:80]}"
-        if self.ratio_type == "Product":
+        if self.ratio_type == "Maintenance":
             color = "green"
         elif self.ratio_type == "Excluded":
             color = "light_magenta"

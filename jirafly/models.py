@@ -83,7 +83,7 @@ class Task:
     def colored_title(self):
         color, title = None, f"{self._key}: {self._title[:80]}"
         if self.ratio_type == "Maintenance":
-            color = "green"
+            color = "cyan"
         elif self.ratio_type == "Excluded":
             color = "light_magenta"
         return f"{self.colored_type} {colored(title, color)}"

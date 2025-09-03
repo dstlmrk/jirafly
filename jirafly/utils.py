@@ -70,14 +70,14 @@ def print_general_info(tasks_by_assignee: dict[str, MemberPlan]):
     table.add_row(["", "Assigned", "All"], divider=True)
     table.add_row(
         [
-            colored(" Maintenance ", color="black", on_color="on_green"),
+            colored(" Maintenance ", color="black", on_color="on_cyan"),
             colored(
                 f"{hle_assigned['Maintenance']:.2f} MD ({hle_assigned['Maintenance'] / total_assigned * 100:5.2f} %)",
-                color="green",
+                color="cyan",
             ),
             colored(
                 f"{hle_all['Maintenance']:.2f} MD ({hle_all['Maintenance'] / total * 100:5.2f} %)",
-                color="green",
+                color="cyan",
             ),
         ],
     )

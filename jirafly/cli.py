@@ -147,8 +147,8 @@ def ratio(
 
     tasks: dict[str, dict[str, Any]] = defaultdict(
         lambda: {
-            "ratio": {"Maintenance": 0, "Product": 0, "Excluded": 0},
-            "time": {"Maintenance": 0, "Product": 0, "Excluded": 0},
+            "ratio": {"Maintenance": 0, "Bug": 0, "Product": 0, "Excluded": 0},
+            "time": {"Maintenance": 0, "Bug": 0, "Product": 0, "Excluded": 0},
             "tasks": [],
         }
     )

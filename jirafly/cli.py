@@ -117,6 +117,9 @@ def planning(
 
 @app.command()
 def ratio(
+    team: Path = typer.Argument(
+        Path("configs/team.yaml"), help="Path to team config YAML file", exists=True
+    ),
     jira_url: str = typer.Option(
         ...,
         envvar="JIRA_URL",
@@ -153,6 +156,7 @@ def ratio(
         }
     )
 
+    team_config = load_team_config(team)
     client = JiraClient(jira_url, jira_email, jira_token)
     for task in client.fetch_tasks(filter_id):
         fix_version = task.fix_version or "No Fix Version"
@@ -229,6 +233,13 @@ def ratio(
             f" / ⏱ {time_product / time_total * 100:4.1f} %"
         )
 
+        if fix_version in team_config.working_days_per_sprint:
+            working_days_total = team_config.working_days_per_sprint[fix_version].total
+            efficiency = f"{(total + excluded) / working_days_total:.2f}"
+            efficiency_str = f"{colored(efficiency, 'black', on_color='on_yellow', attrs=['bold'])} [{working_days_total}]"
+        else:
+            efficiency_str = ""
+
         table.add_row(
             [
                 "",
@@ -236,7 +247,7 @@ def ratio(
                 colored(f"{maintenance_str}  |  {product_str}", attrs=["bold"]),
                 colored(f"{total + excluded:.2f}", attrs=["bold"]),
                 format_seconds(time_total_spent),
-                "",
+                efficiency_str,
             ],
             divider=True,
         )

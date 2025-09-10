@@ -44,6 +44,16 @@ class TeamMember(BaseModel):
         return v.strip()
 
 
+class SprintWorkingDays(BaseModel):
+    """Working days data for a sprint."""
+
+    total: float = Field(
+        ...,
+        gt=0,
+        description="Total working days for the sprint",
+    )
+
+
 class TeamConfig(BaseModel):
     """Configuration for team composition."""
 
@@ -51,6 +61,10 @@ class TeamConfig(BaseModel):
         ...,
         min_length=1,
         description="List of team members",
+    )
+    working_days_per_sprint: dict[str, SprintWorkingDays] = Field(
+        default={},
+        description="Dictionary of sprints with working days data",
     )
 
     def to_member_dict(self) -> dict[str, tuple[float, float]]:

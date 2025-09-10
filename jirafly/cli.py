@@ -177,7 +177,7 @@ def ratio(
 
     for _, (fix_version, data) in enumerate(sorted_tasks.items()):
         maintenance = data["ratio"]["Maintenance"]
-        product = data["ratio"]["Product"]
+        product = data["ratio"]["Product"] + data["ratio"]["Bug"]
         excluded = data["ratio"]["Excluded"]
 
         total_maintenance += maintenance
@@ -185,7 +185,7 @@ def ratio(
         total_excluded += excluded
 
         time_maintenance = data["time"]["Maintenance"]
-        time_product = data["time"]["Product"]
+        time_product = data["time"]["Product"] + data["time"]["Bug"]
 
         time_total_maintenance += time_maintenance
         time_total_product += time_product

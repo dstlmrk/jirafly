@@ -126,13 +126,9 @@ def print_tasks_by_assignee(tasks_by_assignee: dict[str, MemberPlan], verbose: b
 
     def get_task_detail(task_: Task):
         return (
-            f"{task_.hle:.2f}",
-            (
-                f"{task_.colored_title}\n{task_.colored_url}"
-                if verbose
-                else task_.colored_title
-            ),
-            f"{task_.wsjf or ''}",
+            f"{task_.hle:.2f}" if task_.hle else colored("✘", "red"),
+            f"{task_.title}\n{task_.url}" if verbose else task_.title,
+            task_.wsjf or colored("✘", "red"),
             f"{task_.tl}",
             task_.status,
             task_.fix_version or "",

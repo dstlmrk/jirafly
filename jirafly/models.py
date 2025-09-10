@@ -80,7 +80,7 @@ class Task:
         )
 
     @property
-    def colored_title(self):
+    def title(self):
         color, title = None, f"{self._key}: {self._title[:80]}"
         if self.ratio_type == "Maintenance":
             color = "cyan"
@@ -89,7 +89,7 @@ class Task:
         return f"{self.colored_type} {colored(title, color)}"
 
     @property
-    def colored_url(self):
+    def url(self):
         url = f"https://mallpay.atlassian.net/browse/{self._key}"
         return colored(url, "dark_grey")
 

@@ -206,11 +206,7 @@ def ratio(
                     if j == 1
                     else "",
                     task.assignee if task.assignee != previous_assignee else "",
-                    (
-                        f"{task.colored_title}\n{task.colored_url}"
-                        if verbose
-                        else task.colored_title
-                    ),
+                    f"{task.title}\n{task.url}" if verbose else task.title,
                     f"{task.hle:.2f}",
                     colored(format_seconds(task.time_spent), highlight_exceeding(task)),
                     task.status,

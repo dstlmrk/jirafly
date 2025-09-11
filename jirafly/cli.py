@@ -38,6 +38,9 @@ def parse_member_option(values: list[str]) -> dict[str, tuple[float, float]]:
 
 @app.command()
 def planning(
+    sprint: str = typer.Argument(
+        help="Sprint identifier (e.g., 6.12) to highlight tasks from previous sprints"
+    ),
     team: Path = typer.Argument(
         Path("configs/team.yaml"), help="Path to team config YAML file", exists=True
     ),
@@ -111,8 +114,8 @@ def planning(
         tasks_by_assignee[task.assignee].total_hle += task.hle
         tasks_by_assignee[task.assignee].tasks.append(task)
 
-    print_general_info(tasks_by_assignee)
-    print_tasks_by_assignee(tasks_by_assignee, verbose)
+    print_general_info(tasks_by_assignee, sprint)
+    print_tasks_by_assignee(tasks_by_assignee, sprint, verbose)
 
 
 @app.command()
@@ -173,6 +176,7 @@ def ratio(
         "Task",
         "HLE",
         "Time spent",
+        "Spr.",
         "Status",
     ]
 
@@ -210,10 +214,11 @@ def ratio(
                     if j == 1
                     else "",
                     task.assignee if task.assignee != previous_assignee else "",
-                    f"{task.title}\n{task.url}" if verbose else task.title,
+                    task.title_ftm(verbose),
                     f"{task.hle:.2f}",
                     colored(format_seconds(task.time_spent), highlight_exceeding(task)),
-                    task.status,
+                    task.sprint_fmt(fix_version),
+                    task.status_fmt,
                 ],
             )
             time_total_spent += task.time_spent
@@ -236,8 +241,12 @@ def ratio(
         if fix_version in team_config.working_days_per_sprint:
             working_days_total = team_config.working_days_per_sprint[fix_version].total
             efficiency = f"{(total + excluded) / working_days_total:.2f}"
-            efficiency_str = f"{colored(efficiency, 'black', on_color='on_yellow', attrs=['bold'])} [{working_days_total}]"
+            efficiency_str = (
+                f"{colored(efficiency, 'black', on_color='on_yellow', attrs=['bold'])}"
+            )
+            working_days_total = f"{working_days_total} WD"
         else:
+            working_days_total = ""
             efficiency_str = ""
 
         table.add_row(
@@ -248,6 +257,7 @@ def ratio(
                 colored(f"{total + excluded:.2f}", attrs=["bold"]),
                 format_seconds(time_total_spent),
                 efficiency_str,
+                working_days_total,
             ],
             divider=True,
         )
@@ -271,6 +281,7 @@ def ratio(
             colored("Total", attrs=["bold"]),
             colored(f"{maintenance_str}  |  {product_str}", attrs=["bold"]),
             f"{_total + total_excluded:.2f}",
+            "",
             "",
             "",
         ]

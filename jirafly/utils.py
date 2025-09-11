@@ -3,8 +3,7 @@ from copy import deepcopy
 from prettytable import PrettyTable
 from termcolor import colored
 
-from .jira_service import UNASSIGNED
-from .models import MemberPlan, Task
+from .models import UNASSIGNED, MemberPlan, Task
 
 
 def format_seconds(seconds):
@@ -34,7 +33,7 @@ def highlight_exceeding(task: Task) -> str | None:
         return None
 
 
-def print_general_info(tasks_by_assignee: dict[str, MemberPlan]):
+def print_general_info(tasks_by_assignee: dict[str, MemberPlan], current_sprint: str):
     team_capacity = sum(
         (member.wd * member.vel) for member in tasks_by_assignee.values()
     )
@@ -60,8 +59,8 @@ def print_general_info(tasks_by_assignee: dict[str, MemberPlan]):
     )
 
     print(
-        f"\nTotal capacity: {colored(f' {team_capacity:.2f} MD ', 'black', on_color='on_yellow')}"
-        f" (without ratio excluded: {colored(f' {team_capacity - hle_all["Excluded"]:.2f} MD ', 'black', on_color='on_yellow')})",
+        f"\nTotal capacity for {current_sprint} sprint: {colored(f' {team_capacity:.2f} MD ', 'black', on_color='on_yellow')}"
+        f" (without ratio excluded: {team_capacity - hle_all['Excluded']:.2f} MD)",
         end="",
     )
 
@@ -116,7 +115,9 @@ def print_general_info(tasks_by_assignee: dict[str, MemberPlan]):
     print(table)
 
 
-def print_tasks_by_assignee(tasks_by_assignee: dict[str, MemberPlan], verbose: bool):
+def print_tasks_by_assignee(
+    tasks_by_assignee: dict[str, MemberPlan], current_sprint: str, verbose: bool
+):
     sorted_tasks_by_assignee = {
         k: tasks_by_assignee[k]
         for k in sorted(tasks_by_assignee.keys())
@@ -126,12 +127,12 @@ def print_tasks_by_assignee(tasks_by_assignee: dict[str, MemberPlan], verbose: b
 
     def get_task_detail(task_: Task):
         return (
-            f"{task_.hle:.2f}" if task_.hle else colored("✘", "red"),
-            f"{task_.title}\n{task_.url}" if verbose else task_.title,
-            task_.wsjf or colored("✘", "red"),
-            f"{task_.tl}",
-            task_.status,
-            task_.fix_version or "",
+            task_.hle_fmt(current_sprint),
+            task_.title_ftm(verbose),
+            task_.wsjf_fmt,
+            task_.tl,
+            task_.status_fmt,
+            task_.fix_version_fmt(current_sprint),
         )
 
     table = PrettyTable()

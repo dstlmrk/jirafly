@@ -29,19 +29,28 @@ You can run the CLI app from the activated virtual environment:
 ```bash
 $ uv run jirafly planning --help
 $ uv run jirafly ratio --help
+$ uv run jirafly update-fix-versions --help
 ```
 
 ### Available Commands
 
 **Planning Command:**
 ```bash
-$ uv run jirafly planning configs/team.yaml
+$ uv run jirafly planning 6.13 configs/team.yaml
 ```
+Analyzes sprint capacity planning for the specified sprint (e.g., 6.13), showing task assignments and team member capacity utilization.
 
 **Ratio Analysis:**
 ```bash
-$ uv run jirafly ratio
+$ uv run jirafly ratio configs/team.yaml
 ```
+Calculates maintenance vs product development work ratios across sprints with time tracking metrics.
+
+**Update Fix Versions:**
+```bash
+$ uv run jirafly update-fix-versions 6.13
+```
+Bulk updates all tasks without a fix version to the specified sprint version (e.g., 6.13). Finds matching fix version in Jira and prompts for confirmation before updating.
 
 ## Setup
 

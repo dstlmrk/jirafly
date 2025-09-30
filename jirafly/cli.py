@@ -18,6 +18,8 @@ from .utils import (
 
 app = typer.Typer()
 
+JIRA_PROJECT_KEY = "KNJ"
+
 
 def parse_member_option(values: list[str]) -> dict[str, tuple[float, float]]:
     """Parse member option values from nickname=wd,vel format."""
@@ -289,3 +291,81 @@ def ratio(
 
     table.align["HLE"] = "r"
     print(table)
+
+
+@app.command()
+def update_fix_versions(
+    sprint: str = typer.Argument(
+        help="Sprint identifier (e.g., 6.13) to set as fix version"
+    ),
+    jira_url: str = typer.Option(
+        ...,
+        envvar="JIRA_URL",
+        help="JIRA server URL (e.g., https://yourcompany.atlassian.net).",
+    ),
+    jira_email: str = typer.Option(
+        ...,
+        envvar="JIRA_EMAIL",
+        help="JIRA email address for authentication.",
+    ),
+    jira_token: str = typer.Option(
+        ...,
+        envvar="JIRA_TOKEN",
+        help="JIRA API token for authentication.",
+    ),
+    filter_id: str = typer.Option(
+        "",
+        envvar="PLANNING_FILTER_ID",
+        help="JIRA filter ID. Uses PLANNING_FILTER_ID env var if not provided.",
+    ),
+):
+    """Update all tasks without fix version to the specified sprint version."""
+
+    if not filter_id:
+        print(
+            "Error: filter_id must be provided either as parameter or PLANNING_FILTER_ID environment variable"
+        )
+        raise typer.Exit(1)
+
+    client = JiraClient(jira_url, jira_email, jira_token)
+    tasks = client.fetch_tasks(filter_id)
+
+    tasks_without_fix_version = [task for task in tasks if not task.fix_version]
+
+    if not tasks_without_fix_version:
+        print("✅ All tasks already have fix version set")
+        return
+
+    print(f"\n🔍 Found {len(tasks_without_fix_version)} tasks without fix version")
+
+    # Find fix version matching sprint ID
+    version_id = client.find_version_starting_with(JIRA_PROJECT_KEY, sprint)
+
+    if not version_id:
+        print(
+            f"❌ No fix version found starting with '{sprint}' in project {JIRA_PROJECT_KEY}"
+        )
+        raise typer.Exit(1)
+
+    # Ask for confirmation
+    print("\nTasks to update:")
+    for task in tasks_without_fix_version[:10]:  # Show first 10
+        print(f"  - {task._key}: {task._title[:60]}")
+    if len(tasks_without_fix_version) > 10:
+        print(f"  ... and {len(tasks_without_fix_version) - 10} more")
+
+    confirm = typer.confirm(f"\nUpdate {len(tasks_without_fix_version)} tasks?")
+    if not confirm:
+        print("❌ Cancelled")
+        raise typer.Exit(0)
+
+    # Update tasks
+    print("\n⏳ Updating tasks...")
+    for i, task in enumerate(tasks_without_fix_version, 1):
+        try:
+            client.update_issue_fix_version(task._key, version_id)
+            print(f"  [{i}/{len(tasks_without_fix_version)}] ✅ {task._key}")
+        except Exception as e:
+            print(f"  [{i}/{len(tasks_without_fix_version)}] ❌ {task._key}: {e}")
+
+    print(f"\n✅ Updated {len(tasks_without_fix_version)} tasks")

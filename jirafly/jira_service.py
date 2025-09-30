@@ -14,6 +14,24 @@ class JiraClient:
         self.token = token
         self.jira = JIRA(jira_url, basic_auth=(email, token))
 
+    def find_version_starting_with(
+        self, project_key: str, version_prefix: str
+    ) -> str | None:
+        """Find fix version ID that starts with given prefix (e.g., '6.13')."""
+        versions = self.jira.project_versions(project_key)
+
+        for version in versions:
+            if version.name.startswith(version_prefix):
+                print(f"Found fix version: {version.name} (ID: {version.id})")
+                return version.id
+
+        return None
+
+    def update_issue_fix_version(self, issue_key: str, version_id: str) -> None:
+        """Update issue with fix version."""
+        issue = self.jira.issue(issue_key)
+        issue.update(fields={"fixVersions": [{"id": version_id}]})
+
     def fetch_tasks(self, filter_id: str) -> list[Task]:
         print("Fetching tasks...", end=" ")
 
